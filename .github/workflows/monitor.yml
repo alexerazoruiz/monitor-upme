@@ -1,0 +1,42 @@
+name: Monitor UPME
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+      
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Instalar dependencias
+        run: pip install requests beautifulsoup4
+      
+      - name: Descargar estado anterior
+        uses: actions/download-artifact@v4
+        with:
+          name: upme-state
+          path: .
+        continue-on-error: true
+      
+      - name: Ejecutar monitor
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python upme_monitor_github.py
+      
+      - name: Guardar estado
+        uses: actions/upload-artifact@v4
+        with:
+          name: upme-state
+          path: upme_state.json
+          retention-days: 90
